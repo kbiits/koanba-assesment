@@ -146,6 +146,7 @@ const save = () => {
 
 const customers = ref({
     lastId: '',
+    search: '',
     customers: [...ordersWithIndex.value.map(order => ({ customerId: order.customerId, customerName: order.customerName }))],
 });
 const searchCustomer = ref('');
@@ -154,14 +155,24 @@ const customerLoading = ref(false);
 const endIntersectCustomer = async (isIntersecting, entries, observer) => {
     customerLoading.value = 'blue';
     if (isIntersecting) {
-        const rawResp = await fetch(`${route('customer.loadByCursor')}?cursor=${customers.value.lastId || 0}&search=${searchCustomer.value}`)
+        const cursor = customers.value.search === searchCustomer.value ? customers.value.lastId : 0;
+        const rawResp = await fetch(`${route('customer.loadByCursor')}?cursor=${cursor}&search=${searchCustomer.value}`)
         const resp = await rawResp.json();
 
         if (resp.customers?.length > 0) {
-            customers.value = {
-                customers: [...customers.value.customers, ...resp.customers],
-                lastId: resp.lastId,
-            };
+            if (searchCustomer.value != customers.value.search) {
+                customers.value = {
+                    customers: [...resp.customers],
+                    lastId: resp.lastId,
+                    search: searchCustomer.value,
+                };
+            } else {
+                customers.value = {
+                    customers: [...customers.value.customers, ...resp.customers],
+                    lastId: resp.lastId,
+                    search: searchCustomer.value,
+                };
+            }
         }
     }
     customerLoading.value = false;
@@ -174,6 +185,7 @@ const onSelectCustomer = (customerId) => {
 const products = ref({
     lastId: '',
     products: [...ordersWithIndex.value.map(order => ({ productId: order.productId, productName: order.productName }))],
+    search: '',
 });
 const productLoading = ref(false);
 const searchProduct = ref('');
@@ -184,14 +196,24 @@ const onSelectProduct = (productId) => {
 const endIntersectProduct = async (isIntersecting, entries, observer) => {
     productLoading.value = 'blue';
     if (isIntersecting) {
-        const rawResp = await fetch(`${route('product.loadByCursor')}?cursor=${products.value.lastId || 0}&search=${searchProduct.value}`)
+        const cursor = products.value.search === searchProduct.value ? products.value.lastId : 0;
+        const rawResp = await fetch(`${route('product.loadByCursor')}?cursor=${cursor}&search=${searchProduct.value}`)
         const resp = await rawResp.json();
 
         if (resp.products?.length > 0) {
-            products.value = {
-                products: [...products.value.products, ...resp.products],
-                lastId: resp.lastId,
-            };
+            if (searchProduct.value != products.value.search) {
+                products.value = {
+                    products: [...resp.products],
+                    lastId: resp.lastId,
+                    search: searchProduct.value,
+                };
+            } else {
+                products.value = {
+                    products: [...products.value.products, ...resp.products],
+                    lastId: resp.lastId,
+                    search: searchProduct.value,
+                };
+            }
         }
     }
     productLoading.value = false;
@@ -257,7 +279,7 @@ watch(dialogDelete, async (newVal, old) => {
                                                     :model-value="editedItem.customerId"
                                                     @update:model-value="onSelectCustomer" item-text="customerName"
                                                     item-title="customerName" item-value="customerId"
-                                                    label="Select a customer">
+                                                    label="Select a customer" v-model:search="searchCustomer">
                                                     <template v-slot:append-item>
                                                         <div v-intersect="endIntersectCustomer" />
                                                     </template>
@@ -267,8 +289,8 @@ watch(dialogDelete, async (newVal, old) => {
                                                 <v-autocomplete :loading="productLoading" :items="products.products"
                                                     :model-value="editedItem.productId"
                                                     @update:model-value="onSelectProduct" item-text="productName"
-                                                    item-title="productName" item-value="productId"
-                                                    label="Select a product">
+                                                    item-title="productName" item-value="productId" label="Select a product"
+                                                    v-model:search="searchProduct">
                                                     <template v-slot:append-item>
                                                         <div v-intersect="endIntersectProduct" />
                                                     </template>
@@ -296,7 +318,9 @@ watch(dialogDelete, async (newVal, old) => {
                                     <v-btn color="blue-darken-1" variant="text" @click="close">
                                         Cancel
                                     </v-btn>
-                                    <v-btn :disabled="validateEmptyProps.filter(prop => !Boolean(editedItem[prop])).length > 0" color="blue-darken-1" variant="text" @click="save">
+                                    <v-btn
+                                        :disabled="validateEmptyProps.filter(prop => !Boolean(editedItem[prop])).length > 0"
+                                        color="blue-darken-1" variant="text" @click="save">
                                         Save
                                     </v-btn>
                                 </v-card-actions>

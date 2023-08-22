@@ -12,6 +12,7 @@
 - Clone this repository
 ```bash
 git clone https://github.com/kbiits/koanba-assesment
+cd koanba-assesment
 ```
 - Copy .env from .env.example
 ```bash
